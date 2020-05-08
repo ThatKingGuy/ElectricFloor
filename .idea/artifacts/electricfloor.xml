@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="electricfloor">
+    <output-path>$USER_HOME$/Desktop/test server/plugins</output-path>
+    <root id="archive" name="electricfloor.jar">
+      <element id="module-output" name="ElectricFloor" />
+    </root>
+  </artifact>
+</component>
