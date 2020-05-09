@@ -2,9 +2,12 @@ package com.gabe.electricfloor;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -217,15 +220,14 @@ public class Arena {
                 state = GameState.ENDING;
                 winner.sendMessage(format("&aYou have won the game!"));
                 winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
-                winner.teleport(getEndSpawn());
-                players.remove(winner);
+
                 for (Player p : getDeadPlayers()) {
-                    playersOut.remove(p);
                     p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
                     p.sendMessage(format("&a" + winner.getDisplayName() + " has won the game!"));
-                    p.teleport(getEndSpawn());
-                    Bukkit.getScheduler().cancelTask(e);
                 }
+
+                startCelebration(plugin, winner);
+                Bukkit.getScheduler().cancelTask(e);
                 endGame(plugin);
             }
         }
@@ -239,6 +241,47 @@ public class Arena {
         if(state == GameState.INGAME){
             checkWinner(plugin);
         }
+    }
+
+    public void spawnFireworks(Location location, int amount){
+        Location loc = location;
+        Firework fw = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
+        FireworkMeta fwm = fw.getFireworkMeta();
+
+        fwm.setPower(2);
+        fwm.addEffect(FireworkEffect.builder().withColor(Color.LIME).flicker(true).build());
+
+        fw.setFireworkMeta(fwm);
+        fw.detonate();
+
+        for(int i = 0;i<amount; i++){
+            Firework fw2 = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
+            fw2.setFireworkMeta(fwm);
+        }
+    }
+
+    int h = 0;
+    int timeUntilTeleport = 0;
+    public void startCelebration(Plugin plugin, Player winner){
+        timeUntilTeleport = 5;
+        BukkitScheduler scheduler = plugin.getServer().getScheduler();
+        h = scheduler.scheduleSyncRepeatingTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                if(timeUntilTeleport > 0){
+                    timeUntilTeleport --;
+                    spawnFireworks(winner.getLocation(), 2);
+                }else{
+                    winner.teleport(getEndSpawn());
+                    players.remove(winner);
+                    for (Player p : getDeadPlayers()) {
+                        playersOut.remove(p);
+                        p.teleport(getEndSpawn());
+                    }
+                    Bukkit.getScheduler().cancelTask(h);
+                }
+            }
+        }, 0L, 1 * 20L);
     }
 
     public void addPlayer(Player player, Plugin plugin) {
@@ -328,7 +371,7 @@ public class Arena {
 
     public void endGame(Plugin plugin){
         Location check = getGameSpawn();
-        check.setY(check.getBlockY()-1);
+        //check.setY(check.getBlockY()-1);
         for(int x = 0; x<26; x++){
             for(int z = 0; z<26; z++){
                 double newX = check.getBlockX() - 13+x;

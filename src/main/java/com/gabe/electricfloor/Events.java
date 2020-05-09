@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,6 +22,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 public class Events implements Listener {
+
+
+
     public String prefix = "&3Electric&bFloor &7&l⋙ &r&6";
 
     public String format(String text){
@@ -79,6 +83,10 @@ public class Events implements Listener {
                 event.setCancelled(true);
                 damager.sendMessage(format("&cYou cant fight here."));
             }
+        }
+
+        if (event.getDamager() instanceof Firework && event.getEntity() instanceof Player) {
+            event.setCancelled(true);
         }
     }
 
