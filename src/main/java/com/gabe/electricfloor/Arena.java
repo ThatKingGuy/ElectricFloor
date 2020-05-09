@@ -262,7 +262,6 @@ public class Arena {
             }
         }else {
             player.sendMessage(format("&cYou can't join this game right now."));
-            player.sendMessage(String.valueOf(state)+" "+ String.valueOf(state.canJoin()));
         }
     }
 
