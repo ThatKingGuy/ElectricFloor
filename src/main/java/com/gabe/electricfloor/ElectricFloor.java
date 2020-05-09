@@ -13,9 +13,10 @@ public final class ElectricFloor extends JavaPlugin {
     private static ArenaManager arenaManager;
     public String prefix = "&3Electric&bFloor &7&l⋙ &r&6";
 
+
     public void onEnable() {
         getCommand("ef").setTabCompleter(new Completion());
-        getServer().getPluginManager().registerEvents(new Events(), this);
+        getServer().getPluginManager().registerEvents(new Events(this), this);
         arenaManager = new ArenaManager(this);
         arenaManager.deserialise();
     }
@@ -161,6 +162,8 @@ public final class ElectricFloor extends JavaPlugin {
         }
         return true;
     }
+
+
 
     public String format(String text){
         return ChatColor.translateAlternateColorCodes('&', prefix + text);

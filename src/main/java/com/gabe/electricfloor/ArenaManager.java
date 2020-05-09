@@ -30,8 +30,6 @@ public class ArenaManager {
         ConfigurationSection configSection = config.getConfigurationSection("Arenas");
         if(configSection == null) return;
 
-        //configSection.getKeys(false).forEach(s -> arenaSet.add(new Arena(s)));
-
         for (String name : configSection.getKeys(false)) {
             Arena arena = new Arena(name);
             if(config.get("Arenas."+name+".maxPlayers") != null){

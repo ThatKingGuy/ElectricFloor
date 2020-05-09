@@ -27,6 +27,12 @@ public class Events implements Listener {
         return ChatColor.translateAlternateColorCodes('&', prefix + text);
     }
 
+    private ElectricFloor plugin;
+
+    public Events(ElectricFloor plugin){
+        this.plugin = plugin;
+    }
+
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -57,6 +63,7 @@ public class Events implements Listener {
         Arena arena = ElectricFloor.getArenaManager().getArena(player);
         if(arena == null) return;
         arena.removePlayer(player);
+        arena.checkWinner(plugin);
     }
 
 

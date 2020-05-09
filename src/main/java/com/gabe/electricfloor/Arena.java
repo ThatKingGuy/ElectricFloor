@@ -1,10 +1,5 @@
 package com.gabe.electricfloor;
 
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.world.block.BaseBlock;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -213,24 +208,26 @@ public class Arena {
     }
 
     public void checkWinner(Plugin plugin){
-        if(getPlayers().size() == 1){
-            Player winner = null;
-            for(Player p : getPlayers()){
-                winner = p;
+        if(state == GameState.INGAME) {
+            if (getPlayers().size() == 1) {
+                Player winner = null;
+                for (Player p : getPlayers()) {
+                    winner = p;
+                }
+                state = GameState.ENDING;
+                winner.sendMessage(format("&aYou have won the game!"));
+                winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+                winner.teleport(getEndSpawn());
+                players.remove(winner);
+                for (Player p : getDeadPlayers()) {
+                    playersOut.remove(p);
+                    p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+                    p.sendMessage(format("&a" + winner.getDisplayName() + " has won the game!"));
+                    p.teleport(getEndSpawn());
+                    Bukkit.getScheduler().cancelTask(e);
+                }
+                endGame(plugin);
             }
-            state = GameState.ENDING;
-            winner.sendMessage(format("&aYou have won the game!"));
-            winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
-            winner.teleport(getEndSpawn());
-            players.remove(winner);
-            for(Player p : getDeadPlayers()){
-                playersOut.remove(p);
-                p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
-                p.sendMessage(format("&a"+winner.getDisplayName()+" has won the game!"));
-                p.teleport(getEndSpawn());
-                Bukkit.getScheduler().cancelTask(e);
-            }
-            endGame(plugin);
         }
     }
 
