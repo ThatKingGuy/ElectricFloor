@@ -54,6 +54,10 @@ public class ArenaManager {
                 arena.setEndSpawn((Location) config.get("Arenas."+name+".endSpawn"));
             }
 
+            if(config.get("Arenas."+name+".glassHeight") != null){
+                arena.setGlassHeight((Integer) config.get("Arenas."+name+".glassHeight"));
+            }
+
 
 
             arenaSet.add(arena);
@@ -63,7 +67,7 @@ public class ArenaManager {
     public void serialise() {
         arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".maxPlayers", arena.getMaxPlayers()));
         arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".minPlayers", arena.getMinPlayers()));
-        arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".deathHeight", arena.getDeathHeight()));
+        arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".glassHeight", arena.getGlassHeight()));
         arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".lobbySpawn", arena.getLobbySpawn()));
         arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".gameSpawn", arena.getGameSpawn()));
         arenaSet.forEach(arena -> config.set("Arenas." + arena.getName()+".endSpawn", arena.getEndSpawn()));

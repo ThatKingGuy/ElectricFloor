@@ -32,6 +32,11 @@ public class GameScoreBoard {
             }
 
         }else{
+            Objective p = board.registerNewObjective("players","");
+            p.setDisplaySlot(DisplaySlot.SIDEBAR);
+            p.setDisplayName(ChatColor.translateAlternateColorCodes('&',"&3Electric&bFloor"));
+            Score s = p.getScore("Players Left: " + ChatColor.YELLOW + arena.getPlayers().size());
+            s.setScore(10);
 
         }
     }

@@ -1,6 +1,12 @@
 package com.gabe.electricfloor;
 
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -19,7 +25,7 @@ public class Arena {
     private Location lobbySpawn = null;
     private Location gameSpawn = null;
     private Location endSpawn = null;
-    private int deathHeight;
+    private int glassHeight;
     public GameState state;
     private int maxPlayers = 10;
     private int minPlayers = 2;
@@ -65,7 +71,7 @@ public class Arena {
         List<String> loreL = new ArrayList<>();
         loreL.add(ChatColor.GRAY+"Click to add the lobby location");
         loreL.add(ChatColor.GRAY+"on the place where you are standing.");
-        if(getEndSpawn() == null) {
+        if(getLobbySpawn() == null) {
             loreL.add(ChatColor.GOLD + "Done: " + ChatColor.RED+"No");
         }else{
             loreL.add(ChatColor.GOLD + "Done: " + ChatColor.GREEN+"Yes");
@@ -102,6 +108,44 @@ public class Arena {
         setespawnm.setLore(loreE);
         setespawn.setItemMeta(setespawnm);
 
+        ItemStack sg = new ItemStack(Material.RED_STAINED_GLASS);
+        ItemMeta sgm = sg.getItemMeta();
+        sgm.setDisplayName(ChatColor.translateAlternateColorCodes('&',"&6⊳ Set&c glass &6height"));
+        List<String> loresg = new ArrayList<>();
+        loresg.add(ChatColor.GRAY+"Click to add the glass height");
+        loresg.add(ChatColor.GRAY+"on the height where you are standing.");
+        loresg.add(ChatColor.GOLD + "Currently: " + ChatColor.GREEN+getGlassHeight());
+
+        sgm.setLore(loresg);
+        sg.setItemMeta(sgm);
+
+
+        ItemStack minpl = new ItemStack(Material.FEATHER, getMinPlayers());
+        ItemMeta minplm = setespawn.getItemMeta();
+        minplm.setDisplayName(ChatColor.translateAlternateColorCodes('&',"&6⊳ Set min players"));
+        List<String> minplL = new ArrayList<>();
+        minplL.add(ChatColor.GRAY+"Currently: "+ChatColor.GREEN + getMinPlayers());
+        minplL.add(ChatColor.GRAY+"Left -1 Right +1");
+        minplm.setLore(minplL);
+        minpl.setItemMeta(minplm);
+
+        ItemStack maxpl = new ItemStack(Material.BONE, getMaxPlayers());
+        ItemMeta maxplm = setespawn.getItemMeta();
+        maxplm.setDisplayName(ChatColor.translateAlternateColorCodes('&',"&6⊳ Set max players"));
+        List<String> maxplL = new ArrayList<>();
+        maxplL.add(ChatColor.GRAY+"Currently: "+ChatColor.GREEN + getMaxPlayers());
+        maxplL.add(ChatColor.GRAY+"Left -1 Right +1");
+        maxplm.setLore(maxplL);
+        maxpl.setItemMeta(maxplm);
+
+        ItemStack sign = new ItemStack(Material.OAK_SIGN, 1);
+        ItemMeta smeta = sign.getItemMeta();
+        smeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&6⊳ Create Sign"));
+        sign.setItemMeta(smeta);
+        editMenu.setItem(6, sign);
+        editMenu.setItem(5, maxpl);
+        editMenu.setItem(4, minpl);
+        editMenu.setItem(3, sg);
         editMenu.setItem(2, setespawn);
         editMenu.setItem(1, setgspawn);
         editMenu.setItem(0, setlspawn);
@@ -112,12 +156,12 @@ public class Arena {
 
     }
 
-    public int getDeathHeight(){
-        return deathHeight;
+    public int getGlassHeight(){
+        return glassHeight;
     }
 
-    public void setDeathHeight(int deathHeight){
-        this.deathHeight = deathHeight;
+    public void setGlassHeight(int glassHeight){
+        this.glassHeight = glassHeight;
     }
 
     public int getMaxPlayers(){
@@ -168,7 +212,27 @@ public class Arena {
         return Collections.unmodifiableSet(playersOut);
     }
 
-
+    public void checkWinner(Plugin plugin){
+        if(getPlayers().size() == 1){
+            Player winner = null;
+            for(Player p : getPlayers()){
+                winner = p;
+            }
+            state = GameState.ENDING;
+            winner.sendMessage(format("&aYou have won the game!"));
+            winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+            winner.teleport(getEndSpawn());
+            players.remove(winner);
+            for(Player p : getDeadPlayers()){
+                playersOut.remove(p);
+                p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+                p.sendMessage(format("&a"+winner.getDisplayName()+" has won the game!"));
+                p.teleport(getEndSpawn());
+                Bukkit.getScheduler().cancelTask(e);
+            }
+            endGame(plugin);
+        }
+    }
 
     public void killPlayer(Player player, Plugin plugin){
         this.players.remove(player);
@@ -176,23 +240,7 @@ public class Arena {
         player.teleport(getLobbySpawn());
 
         if(state == GameState.INGAME){
-            if(getPlayers().size() == 1){
-                Player winner = null;
-                for(Player p : getPlayers()){
-                    winner = p;
-                }
-                state = GameState.ENDING;
-                winner.sendMessage(format("&cYou have won the game!"));
-                winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
-                winner.teleport(getEndSpawn());
-                for(Player p : getDeadPlayers()){
-                    //players = null;
-                    p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
-                    p.sendMessage(format("&a"+winner.getDisplayName()+" has won the game!"));
-                    p.teleport(getEndSpawn());
-                    Bukkit.getScheduler().cancelTask(e);
-                }
-            }
+            checkWinner(plugin);
         }
     }
 
@@ -200,6 +248,7 @@ public class Arena {
         if (state.canJoin() == true) {
             if (getPlayers().size() < getMaxPlayers()) {
                 this.players.add(player);
+                player.getInventory().clear();
                 if(getPlayers().size() >= getMinPlayers()){
                     if(countdown == -1){
                         startCountDown(plugin);
@@ -270,6 +319,7 @@ public class Arena {
         f = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
             for (Player player : getPlayers()) {
                 player.sendMessage(format("The floor will start breaking in: "+ countdown));
+                player.playSound(player.getLocation(),Sound.BLOCK_NOTE_BLOCK_HARP,1, 0);
             }
             if(countdown >0) {
                 countdown--;
@@ -281,8 +331,34 @@ public class Arena {
     }
 
     public void endGame(Plugin plugin){
+        Location check = getGameSpawn();
+        check.setY(check.getBlockY()-1);
+        for(int x = 0; x<26; x++){
+            for(int z = 0; z<26; z++){
+                double newX = check.getBlockX() - 13+x;
+                double newZ = check.getBlockZ() - 13+z;
 
+                Location c = new Location(getGameSpawn().getWorld(), newX, getGlassHeight() ,newZ);
+
+                Block block = c.getBlock();
+                Bukkit.getLogger().info(block.getType()+"");
+                if(block.getType() == Material.LIME_STAINED_GLASS || block.getType() == Material.ORANGE_STAINED_GLASS || block.getType() == Material.RED_STAINED_GLASS){
+                    block.setType(Material.WHITE_STAINED_GLASS);
+                }
+            }
+        }
+
+        state = GameState.WAITING;
+
+        if(getPlayers().size() < getMinPlayers()){
+            if(state == GameState.WAITING){
+                countdown = -1;
+                Bukkit.getScheduler().cancelTask(c);
+            }
+        }
+        updateScoreboard();
     }
+
 
     int e = 0;
     public void startFloorDecay(Plugin plugin){
