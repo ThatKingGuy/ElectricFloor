@@ -96,7 +96,7 @@ public class Arena {
         ItemMeta setespawnm = setespawn.getItemMeta();
         setespawnm.setDisplayName(ChatColor.translateAlternateColorCodes('&',"&6⊳ Set&c ending &6location"));
         List<String> loreE = new ArrayList<>();
-        loreE.add(ChatColor.GRAY+"Click to add the starting location");
+        loreE.add(ChatColor.GRAY+"Click to add the ending location");
         loreE.add(ChatColor.GRAY+"on the place where you are standing.");
         if(getEndSpawn() == null) {
             loreE.add(ChatColor.GOLD + "Done: " + ChatColor.RED+"No");
@@ -219,10 +219,10 @@ public class Arena {
                 }
                 state = GameState.ENDING;
                 winner.sendMessage(format("&aYou have won the game!"));
-                winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+
 
                 for (Player p : getDeadPlayers()) {
-                    p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
+
                     p.sendMessage(format("&a" + winner.getDisplayName() + " has won the game!"));
                 }
 
@@ -249,7 +249,20 @@ public class Arena {
         FireworkMeta fwm = fw.getFireworkMeta();
 
         fwm.setPower(2);
-        fwm.addEffect(FireworkEffect.builder().withColor(Color.LIME).flicker(true).build());
+        Random rand = new Random();
+        int randomNum = rand.nextInt((5 - 1) + 1) + 1;
+
+        if(randomNum == 1) {
+            fwm.addEffect(FireworkEffect.builder().withColor(Color.LIME).flicker(true).build());
+        }else if(randomNum == 2) {
+            fwm.addEffect(FireworkEffect.builder().withColor(Color.RED).flicker(true).build());
+        }else if(randomNum == 3) {
+            fwm.addEffect(FireworkEffect.builder().withColor(Color.BLUE).flicker(true).build());
+        }else if(randomNum == 4) {
+            fwm.addEffect(FireworkEffect.builder().withColor(Color.ORANGE).flicker(true).build());
+        }else if(randomNum == 5) {
+            fwm.addEffect(FireworkEffect.builder().withColor(Color.YELLOW).flicker(true).build());
+        }
 
         fw.setFireworkMeta(fwm);
         fw.detonate();
@@ -273,8 +286,10 @@ public class Arena {
                     spawnFireworks(winner.getLocation(), 2);
                 }else{
                     winner.teleport(getEndSpawn());
+                    winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
                     players.remove(winner);
                     for (Player p : getDeadPlayers()) {
+                        p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
                         playersOut.remove(p);
                         p.teleport(getEndSpawn());
                     }
@@ -380,7 +395,6 @@ public class Arena {
                 Location c = new Location(getGameSpawn().getWorld(), newX, getGlassHeight() ,newZ);
 
                 Block block = c.getBlock();
-                Bukkit.getLogger().info(block.getType()+"");
                 if(block.getType() == Material.LIME_STAINED_GLASS || block.getType() == Material.ORANGE_STAINED_GLASS || block.getType() == Material.RED_STAINED_GLASS){
                     block.setType(Material.WHITE_STAINED_GLASS);
                 }
@@ -403,25 +417,29 @@ public class Arena {
     public void startFloorDecay(Plugin plugin){
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         e = scheduler.scheduleSyncRepeatingTask(plugin, new Runnable() {
+
             @Override
             public void run() {
                 if(state == GameState.INGAME) {
                     for (Player player : getPlayers()) {
+                        if(player != null) {
+                            int x = player.getLocation().getBlockX();
+                            int y = player.getLocation().getBlockY();
+                            int z = player.getLocation().getBlockZ();
+                            World w = player.getLocation().getWorld();
 
-                        int x = player.getLocation().getBlockX();
-                        int y = player.getLocation().getBlockY();
-                        int z = player.getLocation().getBlockZ();
-                        World w = player.getLocation().getWorld();
-
-                        Location blockUnder = new Location(w, x, y - 1, z);
-                        if (blockUnder.getBlock().getType() == Material.WHITE_STAINED_GLASS) {
-                            blockUnder.getBlock().setType(Material.LIME_STAINED_GLASS);
-                        } else if (blockUnder.getBlock().getType() == Material.LIME_STAINED_GLASS) {
-                            blockUnder.getBlock().setType(Material.ORANGE_STAINED_GLASS);
-                        } else if (blockUnder.getBlock().getType() == Material.ORANGE_STAINED_GLASS) {
-                            blockUnder.getBlock().setType(Material.RED_STAINED_GLASS);
-                        } else if (blockUnder.getBlock().getType() == Material.RED_STAINED_GLASS) {
-                            killPlayer(player, plugin);
+                            Location blockUnder = new Location(w, x, y - 1, z);
+                            if(blockUnder.getBlock() != null) {
+                                if (blockUnder.getBlock().getType() == Material.WHITE_STAINED_GLASS) {
+                                    blockUnder.getBlock().setType(Material.LIME_STAINED_GLASS);
+                                } else if (blockUnder.getBlock().getType() == Material.LIME_STAINED_GLASS) {
+                                    blockUnder.getBlock().setType(Material.ORANGE_STAINED_GLASS);
+                                } else if (blockUnder.getBlock().getType() == Material.ORANGE_STAINED_GLASS) {
+                                    blockUnder.getBlock().setType(Material.RED_STAINED_GLASS);
+                                } else if (blockUnder.getBlock().getType() == Material.RED_STAINED_GLASS) {
+                                    killPlayer(player, plugin);
+                                }
+                            }
                         }
                     }
                 }
