@@ -1,11 +1,19 @@
 package com.gabe.electricfloor;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.DisplaySlot;
+
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Set;
 
 public final class ElectricFloor extends JavaPlugin {
@@ -13,11 +21,23 @@ public final class ElectricFloor extends JavaPlugin {
     private static ArenaManager arenaManager;
     public String prefix = "&3Electric&bFloor &7&l⋙ &r&6";
 
+    private Connection connection;
+    public String host, database, username, password, table;
+    public int port;
+
+
 
     public void onEnable() {
+        int pluginId = 7463; // <-- Replace with the id of your plugin!
+        Metrics metrics = new Metrics(this, pluginId);
+        if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null){
+            new Placeholders(this).register();
+        }
+
         getCommand("ef").setTabCompleter(new Completion());
         getServer().getPluginManager().registerEvents(new Events(this), this);
         arenaManager = new ArenaManager(this);
+
         arenaManager.deserialise();
     }
 
@@ -27,6 +47,48 @@ public final class ElectricFloor extends JavaPlugin {
 
     public static ArenaManager getArenaManager() {
         return arenaManager;
+    }
+
+    public void loadConfig(){
+        getConfig().options().copyDefaults(true);
+        saveConfig();
+    }
+
+    public void mysqlSetup() {
+        host = this.getConfig().getString("host");
+        port = this.getConfig().getInt("port");
+        database = this.getConfig().getString("database");
+        username = this.getConfig().getString("username");
+        password = this.getConfig().getString("password");
+        table = this.getConfig().getString("table");
+
+        try {
+
+            synchronized (this) {
+                if (getConnection() != null && !getConnection().isClosed()) {
+                    return;
+                }
+
+                Class.forName("com.mysql.jdbc.Driver");
+                setConnection(
+                        DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database,
+                                this.username, this.password));
+
+                Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "MYSQL CONNECTED");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public void setConnection(Connection connection) {
+        this.connection = connection;
     }
 
     @Override

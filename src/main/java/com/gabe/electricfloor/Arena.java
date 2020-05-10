@@ -219,7 +219,9 @@ public class Arena {
                 }
                 state = GameState.ENDING;
                 winner.sendMessage(format("&aYou have won the game!"));
-
+                int wins = plugin.getConfig().getInt("stats."+winner.getUniqueId()+".wins");
+                plugin.getConfig().set("stats."+winner.getUniqueId()+".wins", wins + 1);
+                plugin.saveConfig();
 
                 for (Player p : getDeadPlayers()) {
 

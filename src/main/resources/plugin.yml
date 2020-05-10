@@ -2,5 +2,6 @@ name: ElectricFloor
 version: 1.8
 main: com.gabe.electricfloor.ElectricFloor
 api-version: 1.15
+softdepend: [PlaceholderAPI]
 commands:
   ef:
