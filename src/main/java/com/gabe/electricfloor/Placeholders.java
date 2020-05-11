@@ -104,6 +104,11 @@ public class Placeholders extends PlaceholderExpansion {
             return plugin.getConfig().getString("stats."+player.getUniqueId()+".wins", "None");
         }
 
+        // %electricfloor_games%
+        if(identifier.equals("games")){
+            return plugin.getConfig().getString("stats."+player.getUniqueId()+".games", "None");
+        }
+
         // We return null if an invalid placeholder (f.e. %someplugin_placeholder3%)
         // was provided
         return null;

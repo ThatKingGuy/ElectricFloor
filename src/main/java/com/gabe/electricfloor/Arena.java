@@ -9,12 +9,15 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public class Arena {
@@ -154,6 +157,34 @@ public class Arena {
 
     }
 
+    public String color(String txt){
+        return ChatColor.translateAlternateColorCodes('&', txt);
+    }
+
+    public void spectate(Player player){
+        Inventory spectatorMenu = Bukkit.createInventory(null,27, ChatColor.BOLD + "Spectating");
+
+        List<ItemStack> heads = new ArrayList<>();
+        for(Player p : getPlayers()){
+            ItemStack skull = new ItemStack(Material.PLAYER_HEAD, 1, (short) SkullType.PLAYER.ordinal());
+
+            SkullMeta meta = (SkullMeta) skull.getItemMeta();
+            meta.setOwningPlayer(p);
+            meta.setDisplayName(ChatColor.LIGHT_PURPLE + p.getName());
+            skull.setItemMeta(meta);
+
+            heads.add(skull);
+        }
+        int index = 0;
+        for(ItemStack i : heads){
+            spectatorMenu.setItem(index, i);
+            index++;
+        }
+
+        player.openInventory(spectatorMenu);
+
+    }
+
     public int getGlassHeight(){
         return glassHeight;
     }
@@ -221,11 +252,17 @@ public class Arena {
                 winner.sendMessage(format("&aYou have won the game!"));
                 int wins = plugin.getConfig().getInt("stats."+winner.getUniqueId()+".wins");
                 plugin.getConfig().set("stats."+winner.getUniqueId()+".wins", wins + 1);
+                int games = plugin.getConfig().getInt("stats."+winner.getUniqueId()+".games");
+                plugin.getConfig().set("stats."+winner.getUniqueId()+".games", games + 1);
                 plugin.saveConfig();
+                winner.getInventory().clear();
 
                 for (Player p : getDeadPlayers()) {
-
+                    int pgames = plugin.getConfig().getInt("stats."+p.getUniqueId()+".games");
+                    plugin.getConfig().set("stats."+p.getUniqueId()+".games", pgames + 1);
+                    plugin.saveConfig();
                     p.sendMessage(format("&a" + winner.getDisplayName() + " has won the game!"));
+                    p.getInventory().clear();
                 }
 
                 startCelebration(plugin, winner);
@@ -236,6 +273,14 @@ public class Arena {
     }
 
     public void killPlayer(Player player, Plugin plugin){
+        for (Player p : getDeadPlayers()) {
+
+            p.sendMessage(format("&c" + player.getDisplayName() + " has been eliminated!"));
+        }
+        for (Player p : getPlayers()) {
+
+            p.sendMessage(format("&c" + player.getDisplayName() + " has been eliminated!"));
+        }
         this.players.remove(player);
         this.playersOut.add(player);
         player.teleport(getLobbySpawn());
@@ -305,7 +350,6 @@ public class Arena {
         if (state.canJoin() == true) {
             if (getPlayers().size() < getMaxPlayers()) {
                 this.players.add(player);
-                player.getInventory().clear();
                 if(getPlayers().size() >= getMinPlayers()){
                     if(countdown == -1){
                         startCountDown(plugin);
@@ -333,12 +377,15 @@ public class Arena {
 
     public void removePlayer(Player player) {
         this.players.remove(player);
+
+        player.getInventory().clear();
         if(getPlayers().size() < getMinPlayers()){
             if(state == GameState.WAITING){
                 countdown = -1;
                 Bukkit.getScheduler().cancelTask(c);
             }
         }
+
         updateScoreboard();
         for (Player p : getPlayers()) {
             p.sendMessage(format("&c&l" + player.getDisplayName() + "&r&7 has left the game (" + getPlayers().size() + "/" + getMaxPlayers() + ")"));
@@ -370,12 +417,33 @@ public class Arena {
 
     int f = 0;
     public void startCooldown(Plugin plugin){
-        countdown = 5;
+        countdown = 7;
+        Title title = new Title();
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         f = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
             for (Player player : getPlayers()) {
-                player.sendMessage(format("The floor will start breaking in: "+ countdown));
-                player.playSound(player.getLocation(),Sound.BLOCK_NOTE_BLOCK_HARP,1, 0);
+                player.getInventory().clear();
+                //player.sendMessage(format("The floor will start breaking in: "+ countdown));
+
+                if(countdown==7) {
+                    title.send(player, color("Welcome to..."), color("&cElectric Floor"), 0, 1, 0);
+                }else if(countdown==6) {
+                    title.send(player, color("&a5"), color("&7until start!"), 0, 1, 0);
+                }else if(countdown==5) {
+                    title.send(player, color("&a5"), color("&7until start!"), 0, 1, 0);
+                }else if(countdown==4) {
+                    title.send(player, color("&a4"), color("&7until start!"), 0, 1, 0);
+                }else if(countdown==3) {
+                    title.send(player, color("&63"), color("&7until start!"), 0, 1, 0);
+                }else if(countdown==2) {
+                    title.send(player, color("&62"), color("&7until start!"), 0, 1, 0);
+                }else if(countdown==1) {
+                    title.send(player, color("&c1"), color("&7until start!"), 0, 1, 0);
+                }else if(countdown==0) {
+                    title.send(player, color("&aGO!"), color("Keep running, avoid the red blocks!"), 0, 1, 0);
+                }
+
+                player.playSound(player.getLocation(),Sound.BLOCK_NOTE_BLOCK_HARP,1, 3);
             }
             if(countdown >0) {
                 countdown--;
@@ -448,4 +516,6 @@ public class Arena {
             }
         }, 0L, 1 * 5L);
     }
+
+
 }

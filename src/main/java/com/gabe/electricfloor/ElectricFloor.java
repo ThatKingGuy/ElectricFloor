@@ -1,7 +1,11 @@
 package com.gabe.electricfloor;
 
+import com.gmail.filoghost.holograms.api.HolographicDisplaysAPI;
+import com.gmail.filoghost.holographicdisplays.api.Hologram;
+import com.gmail.filoghost.holographicdisplays.api.HologramsAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -28,6 +32,16 @@ public final class ElectricFloor extends JavaPlugin {
 
 
     public void onEnable() {
+        //Hologram hologram = HologramsAPI.createHologram(this, new Location(Bukkit.getWorld("world"),6,17,-103).add(0,2,0));
+        //hologram.appendTextLine("&3Electric&bFloor &6Stats:");
+        //hologram.appendTextLine("&6Wins: %electricfloor_wins%");
+        //hologram.appendTextLine("&6Games Played: %electricfloor_games%");
+
+        if(Bukkit.getPluginManager().isPluginEnabled("HolographicDisplays")){
+            getLogger().info("HolographicDisplays found!");
+        }else{
+            getLogger().info("HolographicDisplays not found!");
+        }
         int pluginId = 7463; // <-- Replace with the id of your plugin!
         Metrics metrics = new Metrics(this, pluginId);
         if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null){
@@ -54,42 +68,7 @@ public final class ElectricFloor extends JavaPlugin {
         saveConfig();
     }
 
-    public void mysqlSetup() {
-        host = this.getConfig().getString("host");
-        port = this.getConfig().getInt("port");
-        database = this.getConfig().getString("database");
-        username = this.getConfig().getString("username");
-        password = this.getConfig().getString("password");
-        table = this.getConfig().getString("table");
 
-        try {
-
-            synchronized (this) {
-                if (getConnection() != null && !getConnection().isClosed()) {
-                    return;
-                }
-
-                Class.forName("com.mysql.jdbc.Driver");
-                setConnection(
-                        DriverManager.getConnection("jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database,
-                                this.username, this.password));
-
-                Bukkit.getConsoleSender().sendMessage(ChatColor.GREEN + "MYSQL CONNECTED");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
