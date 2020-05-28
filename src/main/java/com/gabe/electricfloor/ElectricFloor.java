@@ -1,8 +1,5 @@
 package com.gabe.electricfloor;
 
-import com.gmail.filoghost.holograms.api.HolographicDisplaysAPI;
-import com.gmail.filoghost.holographicdisplays.api.Hologram;
-import com.gmail.filoghost.holographicdisplays.api.HologramsAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -14,10 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.DisplaySlot;
 
-import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.Set;
 
 public final class ElectricFloor extends JavaPlugin {
@@ -25,23 +18,10 @@ public final class ElectricFloor extends JavaPlugin {
     private static ArenaManager arenaManager;
     public String prefix = "&3Electric&bFloor &7&l⋙ &r&6";
 
-    private Connection connection;
-    public String host, database, username, password, table;
-    public int port;
-
 
 
     public void onEnable() {
-        //Hologram hologram = HologramsAPI.createHologram(this, new Location(Bukkit.getWorld("world"),6,17,-103).add(0,2,0));
-        //hologram.appendTextLine("&3Electric&bFloor &6Stats:");
-        //hologram.appendTextLine("&6Wins: %electricfloor_wins%");
-        //hologram.appendTextLine("&6Games Played: %electricfloor_games%");
 
-        if(Bukkit.getPluginManager().isPluginEnabled("HolographicDisplays")){
-            getLogger().info("HolographicDisplays found!");
-        }else{
-            getLogger().info("HolographicDisplays not found!");
-        }
         int pluginId = 7463; // <-- Replace with the id of your plugin!
         Metrics metrics = new Metrics(this, pluginId);
         if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null){
@@ -76,7 +56,7 @@ public final class ElectricFloor extends JavaPlugin {
             Player player = (Player) sender;
             if(label.equalsIgnoreCase("ef")){
                 if(args.length ==0){
-                    player.sendMessage(format("version 1.0"));
+                    player.sendMessage(format("running Electric Floor v"+getDescription().getVersion()));
                 }
                 if(args.length > 0){
 
@@ -97,8 +77,6 @@ public final class ElectricFloor extends JavaPlugin {
                             player.sendMessage(format("&cYou dont have permission for that!"));
                         }
                     }
-
-
                     else if(args[0].equalsIgnoreCase(  "create")){
                         if(player.hasPermission("ef.create")) {
                             if(args.length > 1){
@@ -118,7 +96,6 @@ public final class ElectricFloor extends JavaPlugin {
                             player.sendMessage(format("&cYou dont have permission for that!"));
                         }
                     }
-
                     else if(args[0].equalsIgnoreCase("remove")){
                         if(player.hasPermission("ef.remove")) {
                             if (args.length > 1) {
@@ -136,7 +113,6 @@ public final class ElectricFloor extends JavaPlugin {
                             player.sendMessage(format("&cYou dont have permission for that!"));
                         }
                     }
-
                     else if(args[0].equalsIgnoreCase("join")){
                         if(player.hasPermission("ef.join")) {
                             if (getArenaManager().getArena(player) == null) {
@@ -194,6 +170,9 @@ public final class ElectricFloor extends JavaPlugin {
                         }else{
                             player.sendMessage(format("&cYou dont have permission for that!"));
                         }
+                    }
+                    else{
+                        player.sendMessage(format("&cThis is not a command!"));
                     }
                 }
             }

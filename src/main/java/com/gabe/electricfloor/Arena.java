@@ -13,14 +13,12 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public class Arena {
+
+    Map<UUID, ItemStack[]> items = new HashMap<UUID, ItemStack[]>();
+    Map<UUID, ItemStack[]> armor = new HashMap<UUID, ItemStack[]>();
 
     private final String name;
     private Location lobbySpawn = null;
@@ -35,6 +33,48 @@ public class Arena {
     private int countdown  = -1;
 
     private String prefix = "&3Electric&bFloor &7&l⋙ &r&6";
+
+    public void storeAndClearInventory(Player player){
+        UUID uuid = player.getUniqueId();
+
+        ItemStack[] contents = player.getInventory().getContents();
+        ItemStack[] armorContents = player.getInventory().getArmorContents();
+
+        items.put(uuid, contents);
+        armor.put(uuid, armorContents);
+
+        player.getInventory().clear();
+
+        player.getInventory().setHelmet(null);
+        player.getInventory().setChestplate(null);
+        player.getInventory().setLeggings(null);
+        player.getInventory().setBoots(null);
+    }
+
+    public void restoreInventory(Player player){
+        UUID uuid = player.getUniqueId();
+
+        ItemStack[] contents = items.get(uuid);
+        ItemStack[] armorContents = armor.get(uuid);
+
+        if(contents != null){
+            player.getInventory().setContents(contents);
+        }
+        else{//if the player has no inventory contents, clear their inventory
+            player.getInventory().clear();
+        }
+
+        if(armorContents != null){
+            player.getInventory().setArmorContents(armorContents);
+        }
+        else{//if the player has no armor, set the armor to null
+            player.getInventory().setHelmet(null);
+            player.getInventory().setChestplate(null);
+            player.getInventory().setLeggings(null);
+            player.getInventory().setBoots(null);
+        }
+    }
+
 
     private String format(String text){
         return ChatColor.translateAlternateColorCodes('&', prefix + text);
@@ -255,14 +295,13 @@ public class Arena {
                 int games = plugin.getConfig().getInt("stats."+winner.getUniqueId()+".games");
                 plugin.getConfig().set("stats."+winner.getUniqueId()+".games", games + 1);
                 plugin.saveConfig();
-                winner.getInventory().clear();
 
                 for (Player p : getDeadPlayers()) {
                     int pgames = plugin.getConfig().getInt("stats."+p.getUniqueId()+".games");
                     plugin.getConfig().set("stats."+p.getUniqueId()+".games", pgames + 1);
                     plugin.saveConfig();
                     p.sendMessage(format("&a" + winner.getDisplayName() + " has won the game!"));
-                    p.getInventory().clear();
+
                 }
 
                 startCelebration(plugin, winner);
@@ -273,16 +312,17 @@ public class Arena {
     }
 
     public void killPlayer(Player player, Plugin plugin){
-        for (Player p : getDeadPlayers()) {
+        for (Player p : playersOut) {
 
             p.sendMessage(format("&c" + player.getDisplayName() + " has been eliminated!"));
         }
-        for (Player p : getPlayers()) {
+        for (Player p : players) {
 
             p.sendMessage(format("&c" + player.getDisplayName() + " has been eliminated!"));
         }
-        this.players.remove(player);
-        this.playersOut.add(player);
+
+        players.remove(player);
+        playersOut.add(player);
         player.teleport(getLobbySpawn());
 
         if(state == GameState.INGAME){
@@ -335,10 +375,12 @@ public class Arena {
                     winner.teleport(getEndSpawn());
                     winner.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
                     players.remove(winner);
+                    restoreInventory(winner);
                     for (Player p : getDeadPlayers()) {
                         p.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
                         playersOut.remove(p);
                         p.teleport(getEndSpawn());
+                        restoreInventory(p);
                     }
                     Bukkit.getScheduler().cancelTask(h);
                 }
@@ -350,6 +392,7 @@ public class Arena {
         if (state.canJoin() == true) {
             if (getPlayers().size() < getMaxPlayers()) {
                 this.players.add(player);
+                storeAndClearInventory(player);
                 if(getPlayers().size() >= getMinPlayers()){
                     if(countdown == -1){
                         startCountDown(plugin);
@@ -377,8 +420,7 @@ public class Arena {
 
     public void removePlayer(Player player) {
         this.players.remove(player);
-
-        player.getInventory().clear();
+        restoreInventory(player);
         if(getPlayers().size() < getMinPlayers()){
             if(state == GameState.WAITING){
                 countdown = -1;
@@ -422,13 +464,12 @@ public class Arena {
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         f = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
             for (Player player : getPlayers()) {
-                player.getInventory().clear();
                 //player.sendMessage(format("The floor will start breaking in: "+ countdown));
 
                 if(countdown==7) {
                     title.send(player, color("Welcome to..."), color("&cElectric Floor"), 0, 1, 0);
                 }else if(countdown==6) {
-                    title.send(player, color("&a5"), color("&7until start!"), 0, 1, 0);
+                    title.send(player, color("Welcome to..."), color("&cElectric Floor"), 0, 1, 0);
                 }else if(countdown==5) {
                     title.send(player, color("&a5"), color("&7until start!"), 0, 1, 0);
                 }else if(countdown==4) {
@@ -457,10 +498,10 @@ public class Arena {
     public void endGame(Plugin plugin){
         Location check = getGameSpawn();
         //check.setY(check.getBlockY()-1);
-        for(int x = 0; x<26; x++){
-            for(int z = 0; z<26; z++){
-                double newX = check.getBlockX() - 13+x;
-                double newZ = check.getBlockZ() - 13+z;
+        for(int x = 0; x<100; x++){
+            for(int z = 0; z<100; z++){
+                double newX = check.getBlockX() - 50+x;
+                double newZ = check.getBlockZ() - 50+z;
 
                 Location c = new Location(getGameSpawn().getWorld(), newX, getGlassHeight() ,newZ);
 
@@ -490,24 +531,30 @@ public class Arena {
 
             @Override
             public void run() {
-                if(state == GameState.INGAME) {
-                    for (Player player : getPlayers()) {
-                        if(player != null) {
-                            int x = player.getLocation().getBlockX();
-                            int y = player.getLocation().getBlockY();
-                            int z = player.getLocation().getBlockZ();
-                            World w = player.getLocation().getWorld();
+                if(state != null) {
+                    if (state == GameState.INGAME) {
+                        for (Player player : players) {
+                            if (player != null) {
+                                if (players.contains(player)) {
+                                    if (player.getLocation() != null) {
+                                        int x = player.getLocation().getBlockX();
+                                        int y = player.getLocation().getBlockY();
+                                        int z = player.getLocation().getBlockZ();
+                                        World w = player.getLocation().getWorld();
 
-                            Location blockUnder = new Location(w, x, y - 1, z);
-                            if(blockUnder.getBlock() != null) {
-                                if (blockUnder.getBlock().getType() == Material.WHITE_STAINED_GLASS) {
-                                    blockUnder.getBlock().setType(Material.LIME_STAINED_GLASS);
-                                } else if (blockUnder.getBlock().getType() == Material.LIME_STAINED_GLASS) {
-                                    blockUnder.getBlock().setType(Material.ORANGE_STAINED_GLASS);
-                                } else if (blockUnder.getBlock().getType() == Material.ORANGE_STAINED_GLASS) {
-                                    blockUnder.getBlock().setType(Material.RED_STAINED_GLASS);
-                                } else if (blockUnder.getBlock().getType() == Material.RED_STAINED_GLASS) {
-                                    killPlayer(player, plugin);
+                                        Location blockUnder = new Location(w, x, y - 1, z);
+                                        if (blockUnder.getBlock() != null) {
+                                            if (blockUnder.getBlock().getType() == Material.WHITE_STAINED_GLASS) {
+                                                blockUnder.getBlock().setType(Material.LIME_STAINED_GLASS);
+                                            } else if (blockUnder.getBlock().getType() == Material.LIME_STAINED_GLASS) {
+                                                blockUnder.getBlock().setType(Material.ORANGE_STAINED_GLASS);
+                                            } else if (blockUnder.getBlock().getType() == Material.ORANGE_STAINED_GLASS) {
+                                                blockUnder.getBlock().setType(Material.RED_STAINED_GLASS);
+                                            } else if (blockUnder.getBlock().getType() == Material.RED_STAINED_GLASS) {
+                                                killPlayer(player, plugin);
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

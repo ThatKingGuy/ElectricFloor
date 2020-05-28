@@ -26,6 +26,8 @@ public class GameScoreBoard {
             if(arena.getCountdown() == -1) {
                 Score c = p.getScore("Waiting for players...");
                 c.setScore(8);
+            }else if(arena.getCountdown() == 0){
+
             }else{
                 Score c = p.getScore("Starting in: " + ChatColor.YELLOW + arena.getCountdown());
                 c.setScore(8);
@@ -38,6 +40,9 @@ public class GameScoreBoard {
             Score s = p.getScore("Players Left: " + ChatColor.YELLOW + arena.getPlayers().size());
             s.setScore(10);
 
+            Score c = p.getScore("");
+            c.setScore(8);
+
         }
     }
 
@@ -46,6 +51,7 @@ public class GameScoreBoard {
     }
 
     public static void SetPlayerBoard(Player player, GameScoreBoard s){
+        //player.getScoreboard().getObjective(DisplaySlot.SIDEBAR).unregister();
         player.setScoreboard(s.getBoard());
     }
 }

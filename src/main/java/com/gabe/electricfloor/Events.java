@@ -1,5 +1,6 @@
 package com.gabe.electricfloor;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -120,91 +121,95 @@ public class Events implements Listener {
     public void InventoryClickEvent(InventoryClickEvent event){
         Player player = (Player) event.getWhoClicked();
         Inventory clickedInv = event.getClickedInventory();
+        if(event.getSlot() != -999){
         ItemStack clickedItem = clickedInv.getItem(event.getSlot());
 
         String identifier = ChatColor.translateAlternateColorCodes('&',"&6&lThis is the Arena Editor!");
-        boolean isEditor = false;
-        if(clickedInv.getItem(26) != null) {
-            if (clickedInv.getItem(26).getType() == Material.PAPER) {
-                if (clickedInv.getItem(26).getItemMeta().getDisplayName().equalsIgnoreCase(identifier)) {
-                    isEditor = true;
+
+        if(clickedInv != null && clickedItem != null) {
+            boolean isEditor = false;
+            if (clickedInv.getItem(26) != null) {
+                if (clickedInv.getItem(26).getType() == Material.PAPER) {
+                    if (clickedInv.getItem(26).getItemMeta().getDisplayName().equalsIgnoreCase(identifier)) {
+                        isEditor = true;
+                    }
+                }
+            }
+
+            if (isEditor) {
+                String arenaText = ChatColor.stripColor(clickedInv.getItem(26).getItemMeta().getLore().get(0));
+                String arenaName = arenaText.substring(7);
+                Arena arena = ElectricFloor.getArenaManager().getArena(arenaName);
+                if (arena == null) {
+                    player.sendMessage(format("&cArena does not exist!"));
+                    return;
+                }
+                event.setCancelled(true);
+                if (clickedItem.getType() == Material.LAPIS_BLOCK) {
+                    Location spawn = player.getLocation();
+                    arena.setLobbySpawn(spawn);
+                    player.sendMessage(format("&aSet lobby location to x: " + spawn.getBlockX() + ", y: " + spawn.getBlockY() + ", z: " + spawn.getBlockZ()));
+                    player.closeInventory();
+                }
+                if (clickedItem.getType() == Material.EMERALD_BLOCK) {
+                    Location spawn = player.getLocation();
+                    player.sendMessage(format("&aSet game location to x: " + spawn.getBlockX() + ", y: " + spawn.getBlockY() + ", z: " + spawn.getBlockZ()));
+                    arena.setGameSpawn(player.getLocation());
+                    player.closeInventory();
+                }
+                if (clickedItem.getType() == Material.REDSTONE_BLOCK) {
+                    arena.setEndSpawn(player.getLocation());
+                    Location spawn = player.getLocation();
+                    player.sendMessage(format("&aSet end location to x: " + spawn.getBlockX() + ", y: " + spawn.getBlockY() + ", z: " + spawn.getBlockZ()));
+                    player.closeInventory();
+                }
+                if (clickedItem.getType() == Material.RED_STAINED_GLASS) {
+                    arena.setGlassHeight(player.getLocation().getBlockY());
+                    player.sendMessage(format("&aSet glass height to y: " + player.getLocation().getBlockY()));
+                    player.closeInventory();
+                }
+                if (clickedItem.getType() == Material.FEATHER) {
+                    ClickType clickType = event.getClick();
+                    if (clickType == ClickType.LEFT) {
+                        if (arena.getMinPlayers() > 2) {
+                            arena.setMinPlayers(arena.getMinPlayers() - 1);
+                        }
+                    } else if (clickType == ClickType.RIGHT) {
+                        if (arena.getMinPlayers() < 20) {
+                            arena.setMinPlayers(arena.getMinPlayers() + 1);
+                        }
+                    }
+                    player.closeInventory();
+                }
+                if (clickedItem.getType() == Material.BONE) {
+                    ClickType clickType = event.getClick();
+                    if (clickType == ClickType.LEFT) {
+                        if (arena.getMaxPlayers() > 2) {
+                            arena.setMaxPlayers(arena.getMaxPlayers() - 1);
+                        }
+                    } else if (clickType == ClickType.RIGHT) {
+                        if (arena.getMaxPlayers() < 20) {
+                            arena.setMaxPlayers(arena.getMaxPlayers() + 1);
+                        }
+                    }
+                    player.closeInventory();
+                }
+
+                if (clickedItem.getType() == Material.OAK_SIGN) {
+                    Block block = player.getTargetBlock(null, 5);
+                    if (block.getType() == Material.OAK_SIGN || block.getType() == Material.OAK_WALL_SIGN) {
+                        Sign sign = (Sign) block.getState();
+                        sign.setLine(0, ChatColor.translateAlternateColorCodes('&', "&6[&3Electric&bFloor&6]"));
+                        sign.setLine(1, ChatColor.translateAlternateColorCodes('&', "&aJoin"));
+                        sign.setLine(2, ChatColor.translateAlternateColorCodes('&', "&6" + arena.getName()));
+                        sign.update();
+                    } else {
+                        player.sendMessage(format("&cThis is not a sign."));
+                    }
+                    player.closeInventory();
                 }
             }
         }
-
-        if(isEditor){
-            String arenaText = ChatColor.stripColor(clickedInv.getItem(26).getItemMeta().getLore().get(0));
-            String arenaName = arenaText.substring(7);
-            Arena arena = ElectricFloor.getArenaManager().getArena(arenaName);
-            if(arena == null){
-                player.sendMessage(format("&cArena does not exist!"));
-                return;
-            }
-            event.setCancelled(true);
-            if(clickedItem.getType() == Material.LAPIS_BLOCK){
-                Location spawn = player.getLocation();
-                arena.setLobbySpawn(spawn);
-                player.sendMessage(format("&aSet lobby location to x: "+spawn.getBlockX()+", y: "+spawn.getBlockY()+", z: "+spawn.getBlockZ()));
-                player.closeInventory();
-            }
-            if(clickedItem.getType() == Material.EMERALD_BLOCK){
-                Location spawn = player.getLocation();
-                player.sendMessage(format("&aSet game location to x: "+spawn.getBlockX()+", y: "+spawn.getBlockY()+", z: "+spawn.getBlockZ()));
-                arena.setGameSpawn(player.getLocation());
-                player.closeInventory();
-            }
-            if(clickedItem.getType() == Material.REDSTONE_BLOCK){
-                arena.setEndSpawn(player.getLocation());
-                Location spawn = player.getLocation();
-                player.sendMessage(format("&aSet end location to x: "+spawn.getBlockX()+", y: "+spawn.getBlockY()+", z: "+spawn.getBlockZ()));
-                player.closeInventory();
-            }
-            if(clickedItem.getType() == Material.RED_STAINED_GLASS){
-                arena.setGlassHeight(player.getLocation().getBlockY());
-                player.sendMessage(format("&aSet glass height to y: "+player.getLocation().getBlockY()));
-                player.closeInventory();
-            }
-            if(clickedItem.getType() == Material.FEATHER){
-                ClickType clickType = event.getClick();
-                if(clickType == ClickType.LEFT){
-                    if(arena.getMinPlayers()>2){
-                        arena.setMinPlayers(arena.getMinPlayers()-1);
-                    }
-                }else if(clickType == ClickType.RIGHT){
-                    if(arena.getMinPlayers()<20){
-                        arena.setMinPlayers(arena.getMinPlayers()+1);
-                    }
-                }
-                player.closeInventory();
-            }
-            if(clickedItem.getType() == Material.BONE){
-                ClickType clickType = event.getClick();
-                if(clickType == ClickType.LEFT){
-                    if(arena.getMaxPlayers()>2){
-                        arena.setMaxPlayers(arena.getMaxPlayers()-1);
-                    }
-                }else if(clickType == ClickType.RIGHT){
-                    if(arena.getMaxPlayers()<20){
-                        arena.setMaxPlayers(arena.getMaxPlayers()+1);
-                    }
-                }
-                player.closeInventory();
-            }
-
-            if(clickedItem.getType() == Material.OAK_SIGN){
-                Block block = player.getTargetBlock(null, 5);
-                if(block.getType() == Material.OAK_SIGN || block.getType() == Material.OAK_WALL_SIGN){
-                    Sign sign = (Sign) block.getState();
-                    sign.setLine(0,ChatColor.translateAlternateColorCodes('&', "&6[&3Electric&bFloor&6]"));
-                    sign.setLine(1,ChatColor.translateAlternateColorCodes('&', "&aJoin"));
-                    sign.setLine(2,ChatColor.translateAlternateColorCodes('&', "&6"+arena.getName()));
-                    sign.update();
-                }else{
-                    player.sendMessage(format("&cThis is not a sign."));
-                }
-                player.closeInventory();
-            }
-
 
         }
 
